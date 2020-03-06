@@ -33,8 +33,8 @@ A depiction below shows the intended relations & the actors that may be either u
 The privileged postgresql user (PG_ADMIN) is created for the purposes of dynamic user creation, rotation of self (PG_ADMIN) and other credentials.  
 The initial password of PG_ADMIN during install is rotated by Vault. Requests for credential creation, (as `myapp_readonly`) may may via:
 ```
-	vault write -f database/rotate-role/myapp ; # // Rotate key
-	vault read database/static-creds/myapp ; # // Read new key
+vault write -f database/rotate-role/myapp ; # // Rotate key
+vault read database/static-creds/myapp ; # // Read new key
 ```
 
 **NOTE**: connectivity to vault1 is not drawn above (for simplicity).
