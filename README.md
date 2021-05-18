@@ -59,7 +59,7 @@ Ensure that you already have the following hardware & software requirements:
 You may however need to download the .iso specific to your version (mount it) and execute the VBoxDarwinAdditions.pkg
  - [**Vagrant**](https://www.vagrantup.com/)
  - **Few** **`shell`** or **`screen`** sessions to allow for multiple SSH sessions.
- 
+
 
 ## Usage & Workflow
 Refer to the contents of **`Vagrantfile`** for the number of instances, resources, Network, IP and provisioning steps.
@@ -68,7 +68,7 @@ The provided **`.sh`** script are installer helpers that download the latest vau
 **Inline Environment Variables** can be set for specific versions and other settings that are part of `3.install_vault_postgresql.sh`.
 
 ```bash
-vagrant up --provider virtualbox ;
+vagrant up ;
 # // ... output of provisioning steps.
 vagrant global-status ; # should show running nodes
 # id       name    provider   state   directory
@@ -79,20 +79,29 @@ vagrant global-status ; # should show running nodes
 # // SSH to vault1
 vagrant ssh vault1 ;
 # // ...
-vagrant@vault1:~$ \
-vault read database/creds/myapp_readonly ; # // Generate credentials.
-# ... repeat creating as many as desired.
-vagrant@vault1:~$ \
-vault list /sys/leases/lookup/database/creds/myapp_readonly/
-# ... see how many you've generated;
+#vagrant@vault1:~$ \ # try reading static role
+vault read database/static-creds/myapp_admin
+# // rotate after PostgreSQL step on postgresql host below
+vault write -f database/rotate-role/myapp_admin
 
 # // SSH to postgresql host - on another session ;
 vagrant ssh postgresql ;
-vagrant@postgresql:~$ \
-psql -U postgres -c "\du;" ; # // should show all generated users.
+#vagrant@postgresql:~$ \
+sudo tail -f /var/log/postgresql/postgresql-*.log
+USER_NAM=myapp_admin
+# // try credentials - provide password on prompt:
+psql -d postgres -U $USER_NAME -W
+# // show all generated users.
+psql -U postgres -c "\du;"
+
+# // SSH on vault1
+#vagrant@vault1:~$ \
+vault read database/creds/myapp_readonly  # // Generate read only credentials.
+# ... repeat creating as many as desired.
+vault list /sys/leases/lookup/database/creds/myapp_readonly/
+# ... see how many you've generated;
 
 # // Continue back on vault1 to revoke / delete creds.
-
 # // ---------------------------------------------------------------------------
 # when completely done:
 vagrant destroy -f postgresql vault1 ; # ... destroy al

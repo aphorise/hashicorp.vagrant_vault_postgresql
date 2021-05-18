@@ -246,7 +246,7 @@ function setupPostgresql()
 
 	export VAULT_ADDR=${VAULT_ADDR} ;
 
-	if [[ ! ${PG_FQDN+x} ]]; then PG_FQDN='192.168.10.190' ; fi ;
+	if [[ ! ${PG_FQDN+x} ]]; then PG_FQDN='192.168.178.190' ; fi ;
 	if [[ ! ${PG_ADMIN+x} ]]; then PG_ADMIN='myapp_admin' ; fi ;
 	if [[ ! ${PG_USER+x} ]]; then PG_USER='vault-edu' ; fi ;
 	if [[ ! ${PG_SECRET+x} ]]; then PG_SECRET='SECRET' ; fi ;
@@ -257,15 +257,11 @@ function setupPostgresql()
 	vault secrets enable database 2>&1 > /dev/null ;
 	if (($? == 0)) ; then printf "SUCCESSFULLY: Enabled Vault Database Secrets Engine.\n" ; fi ;
 
-# printf '\nSTOPPING .....\n' ;
-# exit 0 ;
-
 	vault write database/config/${PG_DB} \
 		plugin_name=postgresql-database-plugin \
 		connection_url="postgresql://{{username}}:{{password}}@${PG_FQDN}/${PG_DB}" \
 		allowed_roles="*" username="${PG_ADMIN}" password="${PG_SECRET}" 2>&1 > /dev/null ;
 	if (($? == 0)) ; then printf "SUCCESSFULLY: Wrote to database/config/postgresql ????.\n" ; fi ;
-#printf '\nhere2.......\n\'
 
 	vault write database/static-roles/${PG_ADMIN} \
 		db_name=${PG_DB} \
@@ -276,7 +272,6 @@ function setupPostgresql()
 
 #	vault read database/static-roles/${VAULT_DB_REF} ;
 #	vault read database/static-creds/${VAULT_DB_REF} ;
-
 #	vault write -f database/rotate-role/${VAULT_DB_REF} ; # // Rotate key
 #	vault read database/static-creds/${VAULT_DB_REF} ; # // Read new key
 
@@ -287,12 +282,11 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"{{name}}\";
 """ > ${VAULT_PG_ROLE}.sql ;
 
 	vault write database/roles/${VAULT_PG_ROLE} db_name=${PG_DB} \
-		creation_statements=@${VAULT_PG_ROLE}.sql default_ttl=1h max_ttl=24h ;
-#printf '\nhere3.......\n\'
+		creation_statements=@${VAULT_PG_ROLE}.sql default_ttl=1h max_ttl=24h 2>&1 > /dev/null;
+	if (($? == 0)) ; then printf "SUCCESSFULLY: Created database/roles/${VAULT_PG_ROLE}.\n" ; fi ;
 
 	# // Generate credentials.
 	# vault read database/creds/${VAULT_PG_ROLE} ;
-
 	# psql -U postgres -c "\du;"
 }
 
